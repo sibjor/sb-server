@@ -24,4 +24,7 @@ I chose to refactor a C tutorial I had stumbled upon earlier intended to be appl
 
 ## Why/What I've refactored (or To Be):
 
-- [ ] Extend the file descriptor "server_fd"
+- [ ] Extend the file descriptor "server_fd". _fd = "file descriptor".
+    1. After acceptance, each client should have their own "client_fd".
+    2. Eventually a "log_fd" variable to be implemented as well.
+
