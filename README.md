@@ -24,7 +24,19 @@ I chose to refactor a C tutorial I had stumbled upon earlier intended to be appl
 
 ## Why/What I've refactored (or To Be):
 
-- [ ] Extend the file descriptor "server_fd". _fd = "file descriptor".
+1. [ ] Refactor or clean/remove some of the (many) libraries in use.
+    - [ ] Use `bool` instead of `stdbool.h`
+    - [ ] Use `<iostream>` for input/output, avoid `stdio.h`
+    - [ ] Use `std::string` from `<string>` instead of `string.h` functions
+    - [ ] Use `<cstdlib>` only if needed for stuff like `std::exit()`, avoid direct C `stdlib.h` calls
+    - [ ] Use `<thread>`, instead of `pthread.h`
+    - [ ] Use `<filesystem>` instead of `dirent.h` and `unistd.h` for file and folder operations
+    - [ ] Use `<regex>` instead of POSIX `regex.h`
+    - [ ] Use `<chrono>` for time instead of `time.h`
+    - [ ] Implement self made error checks instead of `errno.h`
+    - [ ] Use `assert` from `<cassert>` for debugging checks
+2. [ ] Extend the file descriptor "server_fd". _fd = "file descriptor".
     1. After acceptance, each client should have their own "client_fd".
     2. Eventually a "log_fd" variable to be implemented as well.
+3. To be continued...
 
