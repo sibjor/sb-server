@@ -1,7 +1,8 @@
+.cache
+.*
 build
 compile_commands.json
 sb-server-c
 sb-server-cpp
 *.exe
 *.o
-.*
