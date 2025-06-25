@@ -12,6 +12,7 @@ ln -s build/compile_commands.json compile_commands.json
 - School: Forsbergs Skola, Kingdom of Sweden
 - Starting Date: 24/6/2025
 - [Tutorial](https://dev.to/jeffreythecoder/how-i-built-a-simple-http-server-from-scratch-using-c-739)
+- [Tutorial repo](https://github.com/JeffreytheCoder/Simple-HTTP-Server)
 - Method of refactoring: From C into C++.
 - Tools: GCC, CMake, Visual Studio Code, ClangD, Git, Github
 - OS: Raspberry Pi OS, Ubuntu OS, (Debian)

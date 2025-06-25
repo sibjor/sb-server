@@ -8,7 +8,7 @@ project(SB-SERVER
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # C-program
-add_executable(sb-server-c main.c)
+add_executable(sb-server-c server.c)
 
 # C++-program
-add_executable(sb-server-cpp main.cpp)
+add_executable(sb-server-cpp server.cpp)
