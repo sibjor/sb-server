@@ -5,11 +5,14 @@
 #include <iterator>
 #include <netinet/in.h>
 #include <regex>
+#include <string.h>
 #include <string>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <thread>
+#include <sstream>
+#include <fstream>
 
 #define PORT 80
 #define BUFFER_SIZE 104857600
@@ -124,53 +127,53 @@ private:
   static constexpr char UPPER_F = 'F';
 };
 
-/*
-void build_http_response(const char *file_name,
-                        const char *file_ext,
-                        char *response,
-                        size_t *response_len) {
-    // build HTTP header
-    const char *mime_type = get_mime_type(file_ext);
-    char *header = (char *)malloc(BUFFER_SIZE * sizeof(char));
-    snprintf(header, BUFFER_SIZE,
-             "HTTP/1.1 200 OK\r\n"
-             "Content-Type: %s\r\n"
-             "\r\n",
-             mime_type);
+class HttpResponseBuilder {
+public:
+    static std::string build_http_response(const std::filesystem::path& file_path) {
+        // First, check if the requested file exists (e.g., "index.html")
+        if (!std::filesystem::exists(file_path)) {
+            return response_404();
+        }
 
-    // if file not exist, response is 404 Not Found
-    int file_fd = open(file_name, O_RDONLY);
-    if (file_fd == -1) {
-        snprintf(response, BUFFER_SIZE,
-                 "HTTP/1.1 404 Not Found\r\n"
-                 "Content-Type: text/plain\r\n"
-                 "\r\n"
-                 "404 Not Found");
-        *response_len = strlen(response);
-        return;
+        // Read the whole file into a string
+        std::ifstream file(file_path, std::ios::binary);
+        if (!file) {
+            return response_404();
+        }
+
+        std::ostringstream file_content;
+        file_content << file.rdbuf();
+
+        const std::string& mime = FileHelper::mime_type(file_path.extension().string());
+
+        // Build the HTTP header and response
+        std::ostringstream response;
+        response << STATUS_OK
+                 << "Content-Type: " << mime << "\r\n"
+                 << "Content-Length: " << file_content.str().size() << "\r\n"
+                 << "\r\n"
+                 << file_content.str();
+
+        return response.str();
     }
 
-    // get file size for Content-Length
-    struct stat file_stat;
-    fstat(file_fd, &file_stat);
-    off_t file_size = file_stat.st_size;
-
-    // copy header to response buffer
-    *response_len = 0;
-    memcpy(response, header, strlen(header));
-    *response_len += strlen(header);
-
-    // copy file to response buffer
-    ssize_t bytes_read;
-    while ((bytes_read = read(file_fd,
-                            response + *response_len,
-                            BUFFER_SIZE - *response_len)) > 0) {
-        *response_len += bytes_read;
+private:
+    static std::string response_404() {
+        std::ostringstream response;
+        response << STATUS_NOT_FOUND
+                 << CONTENT_TYPE_TEXT
+                 << "Content-Length: " << strlen(MSG_NOT_FOUND) << "\r\n"
+                 << "\r\n"
+                 << MSG_NOT_FOUND;
+        return response.str();
     }
-    free(header);
-    close(file_fd);
-}
-*/
+
+    static constexpr const char* STATUS_OK = "HTTP/1.1 200 OK\r\n";
+    static constexpr const char* STATUS_NOT_FOUND = "HTTP/1.1 404 Not Found\r\n";
+    static constexpr const char* CONTENT_TYPE_TEXT = "Content-Type: text/plain\r\n";
+    static constexpr const char* MSG_NOT_FOUND = "404 Not Found";
+};
+
 /*
 void *handle_client(void *arg) {
     int client_fd = *((int *)arg);
