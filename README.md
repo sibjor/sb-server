@@ -23,20 +23,21 @@ The C++ version is refactored from the C implementation which follows the tutori
 
 I chose to refactor a C tutorial I had stumbled upon earlier intended to be applied to act as a HTTP server software running on my Raspberry Pi 5 8GB at home on a 1000/mbit fibre connection hosting one or several of my domains. My thoughts is that it could possibly be expanded wrapping future assignments such as portfolio/frontend network & graphics/physics/game programming on one single environment hosting the projects products as well as source code and free licence publicly on the internet. However, the mission given by our teacher this time is cited: ___"When we refactor, we do not add new features to our code, nor do we solve problems or hunt for bugs: we only change it in ways that make it easier to read and maintain."___ Therefore, I will expand the project through separate git submodules, not interfering with the demands stated above.
 
-## Why/What I've refactored (or To Be):
+## TODO:
 
 1. [ ] Refactor or clean/remove some of the (many) libraries in use.
-    - [ ] Use `bool` instead of `stdbool.h`
-    - [ ] Use `<iostream>` for input/output, avoid `stdio.h`
-    - [ ] Use `std::string` from `<string>` instead of `string.h` functions
-    - [ ] Use `<thread>`, instead of `pthread.h`
-    - [ ] Use `<filesystem>` instead of `dirent.h` and `unistd.h` for file and folder operations
-    - [ ] Use `<regex>` instead of POSIX `regex.h`
-    - [ ] Use `<chrono>` for time instead of `time.h`
+    - [x] Use `bool` instead of `stdbool.h`
+    - [x] Use `<iostream>` for input/output, avoid `stdio.h`
+    - [x] Use `std::string` from `<string>` instead of `string.h` functions
+    - [x] Use `<thread>`, instead of `pthread.h`
+    - [x] Use `<filesystem>` instead of `dirent.h` and `unistd.h` for file and folder operations
+    - [x] Use `<regex>` instead of POSIX `regex.h`
+    - [x] Use `<chrono>` for time instead of `time.h`
     - [ ] Implement self made error checks instead of `errno.h`
-    - [ ] Implement self made debugging checks
+    - [ ] Implement self made debugging checks instead of `assert.h`
 2. [ ] Extend the file descriptor "server_fd". _fd = "file descriptor".
-    1. After acceptance, each client should have their own "client_fd".
-    2. Eventually a "log_fd" variable to be implemented as well.
-3. To be continued...
-
+    - After acceptance, each client should have their own "client_fd".
+    - Eventually a "log_fd" variable to be implemented as well.
+    - A class for this could possibly be of use.
+3. [ ] Rename variables, functions, structs for clearer description of functionalities.
+4. 
