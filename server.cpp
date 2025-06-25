@@ -1,84 +1,102 @@
+#include <arpa/inet.h>
+#include <chrono>
+#include <filesystem>
+#include <iostream>
 #include <iterator>
+#include <netinet/in.h>
+#include <regex>
+#include <string>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <iostream>
-#include <string>
-#include <filesystem>
 #include <thread>
-#include <chrono>
-#include <regex>
 
 #define PORT 80
 #define BUFFER_SIZE 104857600
-/*
-const char *get_file_extension(const char *file_name) {
-    const char *dot = strrchr(file_name, '.');
-    if (!dot || dot == file_name) {
-        return "";
-    }
-    return dot + 1;
-}
-*/
-std::filesystem::path file_ext(const std::filesystem::path& path) {
-    return path.extension();
+
+std::filesystem::path file_ext(const std::filesystem::path &path) {
+  return path.extension();
 }
 
-/*
-const char *get_mime_type(const char *file_ext) {
-    if (strcasecmp(file_ext, "html") == 0 || strcasecmp(file_ext, "htm") == 0) {
-        return "text/html";
-    } else if (strcasecmp(file_ext, "txt") == 0) {
-        return "text/plain";
-    } else if (strcasecmp(file_ext, "jpg") == 0 || strcasecmp(file_ext, "jpeg") == 0) {
-        return "image/jpeg";
-    } else if (strcasecmp(file_ext, "png") == 0) {
-        return "image/png";
-    } else {
-        return "application/octet-stream";
-    }
+std::string mime_type(const std::string &ext) {
+  std::string lower_ext = ext;
+  std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(),
+                 ::tolower);
+
+  if (lower_ext == "html" || lower_ext == "htm")
+    return "text/html";
+  else if (lower_ext == "txt")
+    return "text/plain";
+  else if (lower_ext == "jpg" || lower_ext == "jpeg")
+    return "image/jpeg";
+  else if (lower_ext == "png")
+    return "image/png";
+  else
+    return "application/octet-stream"; // Default MIME type for binary data or
+                                       // unknown file types.
 }
-*/
-std::string mime_type(const std::string& ext) {
-    std::string lower_ext = ext;
-    std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(), ::tolower);
 
-    if (lower_ext == "html" || lower_ext == "htm") return "text/html";
-    else if (lower_ext == "txt") return "text/plain";
-    else if (lower_ext == "jpg" || lower_ext == "jpeg") return "image/jpeg";
-    else if (lower_ext == "png") return "image/png";
-    else return "application/octet-stream"; // Default MIME type for binary data or unknown file types.
+class url_decoder {
+public:
+  // Decode a URL-encoded string from the browser of the client.
+  std::string decode(std::string_view src, bool &correct) const {  // 'correct' is set to false if invalid sequences are found.
+    std::string output;
+    output.reserve(src.size());  // Reserve space to avoid reallocations
+    correct = true;
 
-}
-/*
-char *url_decode(const char *src) {
-    size_t src_len = strlen(src);
-    char *decoded = malloc(src_len + 1);
-    size_t decoded_len = 0;
+    for (size_t i = 0; i < src.size(); ++i) {
+      char c = src[i];
 
-    // decode %2x to hex
-    for (size_t i = 0; i < src_len; i++) {
-        if (src[i] == '%' && i + 2 < src_len) {
-            int hex_val;
-            sscanf(src + i + 1, "%2x", &hex_val);
-            decoded[decoded_len++] = hex_val;
-            i += 2;
-        } else {
-            decoded[decoded_len++] = src[i];
+      if (c == '%') {
+        // '%' signals a hex-encoded byte, expect two hex digits after
+        // If missing or invalid hex digits, mark as incorrect and copy '%' literally
+        if (i + 2 >= src.size() || !is_hex(src[i + 1]) || !is_hex(src[i + 2])) {
+          correct = false;
+          output += '%';
+          continue;
         }
-    }
 
-    // add null terminator
-    decoded[decoded_len] = '\0';
-    return decoded;
-}
-*/
+        // Convert two hex digits into a single byte/char
+        int high = hex_value(src[i + 1]);
+        int low = hex_value(src[i + 2]);
+        output += static_cast<char>((high << 4) | low);
+        i += 2;  // Skip processed hex digits
+      } 
+      else if (c == '+') {
+        // '+' in URLs is a space
+        output += ' ';
+      } 
+      else {
+        // All other chars copy directly
+        output += c;
+      }
+    }
+    return output;
+  }
+
+private:
+  // Check if character is a valid hex digit
+  static bool is_hex(char ch) {
+    return (ch >= '0' && ch <= '9') || 
+           (ch >= 'a' && ch <= 'f') || 
+           (ch >= 'A' && ch <= 'F');
+  }
+
+  // Convert a single hex digit character to its integer value
+  static int hex_value(char ch) {
+    if (ch >= '0' && ch <= '9')
+      return ch - '0';
+    if (ch >= 'a' && ch <= 'f')
+      return ch - 'a' + 10;
+    return ch - 'A' + 10;
+  }
+};
+
+
 /*
-void build_http_response(const char *file_name, 
-                        const char *file_ext, 
-                        char *response, 
+void build_http_response(const char *file_name,
+                        const char *file_ext,
+                        char *response,
                         size_t *response_len) {
     // build HTTP header
     const char *mime_type = get_mime_type(file_ext);
@@ -113,8 +131,8 @@ void build_http_response(const char *file_name,
 
     // copy file to response buffer
     ssize_t bytes_read;
-    while ((bytes_read = read(file_fd, 
-                            response + *response_len, 
+    while ((bytes_read = read(file_fd,
+                            response + *response_len,
                             BUFFER_SIZE - *response_len)) > 0) {
         *response_len += bytes_read;
     }
@@ -181,8 +199,8 @@ int main(int argc, char *argv[]) {
     server_addr.sin_port = htons(PORT);
 
     // bind socket to port
-    if (bind(server_fd, 
-            (struct sockaddr *)&server_addr, 
+    if (bind(server_fd,
+            (struct sockaddr *)&server_addr,
             sizeof(server_addr)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -202,8 +220,8 @@ int main(int argc, char *argv[]) {
         int *client_fd = malloc(sizeof(int));
 
         // accept client connection
-        if ((*client_fd = accept(server_fd, 
-                                (struct sockaddr *)&client_addr, 
+        if ((*client_fd = accept(server_fd,
+                                (struct sockaddr *)&client_addr,
                                 &client_addr_len)) < 0) {
             perror("accept failed");
             continue;
