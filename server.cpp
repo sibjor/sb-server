@@ -41,41 +41,17 @@ const char *get_mime_type(const char *file_ext) {
     }
 }
 */
+std::string mime_type(const std::string& ext) {
+    std::string lower_ext = ext;
+    std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(), ::tolower);
 
+    if (lower_ext == "html" || lower_ext == "htm") return "text/html";
+    else if (lower_ext == "txt") return "text/plain";
+    else if (lower_ext == "jpg" || lower_ext == "jpeg") return "image/jpeg";
+    else if (lower_ext == "png") return "image/png";
+    else return "application/octet-stream"; // Default MIME type for binary data or unknown file types.
 
-/*
-bool case_insensitive_compare(const char *s1, const char *s2) {
-    while (*s1 && *s2) {
-        if (tolower((unsigned char)*s1) != tolower((unsigned char)*s2)) {
-            return false;
-        }
-        s1++;
-        s2++;
-    }
-    return *s1 == *s2;
 }
-*/
-/*
-char *get_file_case_insensitive(const char *file_name) {
-    DIR *dir = opendir(".");
-    if (dir == NULL) {
-        perror("opendir");
-        return NULL;
-    }
-
-    struct dirent *entry;
-    char *found_file_name = NULL;
-    while ((entry = readdir(dir)) != NULL) {
-        if (case_insensitive_compare(entry->d_name, file_name)) {
-            found_file_name = entry->d_name;
-            break;
-        }
-    }
-
-    closedir(dir);
-    return found_file_name;
-}
-*/
 /*
 char *url_decode(const char *src) {
     size_t src_len = strlen(src);
