@@ -14,27 +14,48 @@
 #define PORT 80
 #define BUFFER_SIZE 104857600
 
-std::filesystem::path file_ext(const std::filesystem::path &path) {
-  return path.extension();
-}
 
-std::string mime_type(const std::string &ext) {
-  std::string lower_ext = ext;
-  std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(),
-                 ::tolower);
+class FileHelper {
+public:
+  // Return the file extension from a given filesystem path
+  static std::filesystem::path file_ext(const std::filesystem::path &path) {
+    return path.extension();
+  }
 
-  if (lower_ext == "html" || lower_ext == "htm")
-    return "text/html";
-  else if (lower_ext == "txt")
-    return "text/plain";
-  else if (lower_ext == "jpg" || lower_ext == "jpeg")
-    return "image/jpeg";
-  else if (lower_ext == "png")
-    return "image/png";
-  else
-    return "application/octet-stream"; // Default MIME type for binary data or
-                                       // unknown file types.
-}
+  // Determine the MIME type based on file extension (case-insensitive)
+  static std::string mime_type(const std::string &ext) {
+    // Convert extension to lowercase for case-insensitive comparison
+    std::string lower_ext = ext;
+    std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(), ::tolower);
+
+    // Match known extensions to their MIME types
+    if (lower_ext == EXT_HTML || lower_ext == EXT_HTM) return MIME_HTML;
+    else if (lower_ext == EXT_TXT) return MIME_TXT;
+    else if (lower_ext == EXT_JPG || lower_ext == EXT_JPEG) return MIME_JPEG;
+    else if (lower_ext == EXT_PNG) return MIME_PNG;
+    
+    // Return default MIME type if extension is unknown
+    else return MIME_DEFAULT;
+  }
+
+private:
+  // Known file extensions
+  static constexpr const char* EXT_HTML = "html";
+  static constexpr const char* EXT_HTM = "htm";
+  static constexpr const char* EXT_TXT = "txt";
+  static constexpr const char* EXT_JPG = "jpg";
+  static constexpr const char* EXT_JPEG = "jpeg";
+  static constexpr const char* EXT_PNG = "png";
+
+  // Corresponding MIME types
+  static constexpr const char* MIME_HTML = "text/html";
+  static constexpr const char* MIME_TXT = "text/plain";
+  static constexpr const char* MIME_JPEG = "image/jpeg";
+  static constexpr const char* MIME_PNG = "image/png";
+  static constexpr const char* MIME_DEFAULT = "application/octet-stream"; // fallback for unknown types
+};
+
+
 
 class url_decoder {
 public:
