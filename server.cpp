@@ -14,7 +14,6 @@
 #define PORT 80
 #define BUFFER_SIZE 104857600
 
-
 class FileHelper {
 public:
   // Return the file extension from a given filesystem path
@@ -26,93 +25,104 @@ public:
   static std::string mime_type(const std::string &ext) {
     // Convert extension to lowercase for case-insensitive comparison
     std::string lower_ext = ext;
-    std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(), ::tolower);
+    std::transform(lower_ext.begin(), lower_ext.end(), lower_ext.begin(),
+                   ::tolower);
 
     // Match known extensions to their MIME types
-    if (lower_ext == EXT_HTML || lower_ext == EXT_HTM) return MIME_HTML;
-    else if (lower_ext == EXT_TXT) return MIME_TXT;
-    else if (lower_ext == EXT_JPG || lower_ext == EXT_JPEG) return MIME_JPEG;
-    else if (lower_ext == EXT_PNG) return MIME_PNG;
-    
+    if (lower_ext == EXT_HTML || lower_ext == EXT_HTM)
+      return MIME_HTML;
+    else if (lower_ext == EXT_TXT)
+      return MIME_TXT;
+    else if (lower_ext == EXT_JPG || lower_ext == EXT_JPEG)
+      return MIME_JPEG;
+    else if (lower_ext == EXT_PNG)
+      return MIME_PNG;
+
     // Return default MIME type if extension is unknown
-    else return MIME_DEFAULT;
+    else
+      return MIME_DEFAULT;
   }
 
 private:
   // Known file extensions
-  static constexpr const char* EXT_HTML = "html";
-  static constexpr const char* EXT_HTM = "htm";
-  static constexpr const char* EXT_TXT = "txt";
-  static constexpr const char* EXT_JPG = "jpg";
-  static constexpr const char* EXT_JPEG = "jpeg";
-  static constexpr const char* EXT_PNG = "png";
+  static constexpr const char *EXT_HTML = "html";
+  static constexpr const char *EXT_HTM = "htm";
+  static constexpr const char *EXT_TXT = "txt";
+  static constexpr const char *EXT_JPG = "jpg";
+  static constexpr const char *EXT_JPEG = "jpeg";
+  static constexpr const char *EXT_PNG = "png";
 
   // Corresponding MIME types
-  static constexpr const char* MIME_HTML = "text/html";
-  static constexpr const char* MIME_TXT = "text/plain";
-  static constexpr const char* MIME_JPEG = "image/jpeg";
-  static constexpr const char* MIME_PNG = "image/png";
-  static constexpr const char* MIME_DEFAULT = "application/octet-stream"; // fallback for unknown types
+  static constexpr const char *MIME_HTML = "text/html";
+  static constexpr const char *MIME_TXT = "text/plain";
+  static constexpr const char *MIME_JPEG = "image/jpeg";
+  static constexpr const char *MIME_PNG = "image/png";
+  static constexpr const char *MIME_DEFAULT = "application/octet-stream"; // fallback for unknown types
 };
 
-
-
-class url_decoder {
+class UrlDecoder {
 public:
-  // Decode a URL-encoded string from the browser of the client.
-  std::string decode(std::string_view src, bool &correct) const {  // 'correct' is set to false if invalid sequences are found.
+  // Decode URL-encoded string; sets 'correct' false if invalid sequences found
+  std::string decode(std::string_view src, bool &correct) const {
     std::string output;
-    output.reserve(src.size());  // Reserve space to avoid reallocations
+    output.reserve(src.size()); // Reserve space to avoid reallocations
     correct = true;
 
     for (size_t i = 0; i < src.size(); ++i) {
       char c = src[i];
 
-      if (c == '%') {
-        // '%' signals a hex-encoded byte, expect two hex digits after
-        // If missing or invalid hex digits, mark as incorrect and copy '%' literally
+      if (c == PERCENT) {
+        // '%' signals start of hex-encoded byte; expect two hex digits after
+        // If missing or invalid, mark as incorrect and copy '%' literally
         if (i + 2 >= src.size() || !is_hex(src[i + 1]) || !is_hex(src[i + 2])) {
           correct = false;
-          output += '%';
+          output += PERCENT;
           continue;
         }
 
-        // Convert two hex digits into a single byte/char
+        // Convert hex pair to single char
         int high = hex_value(src[i + 1]);
         int low = hex_value(src[i + 2]);
         output += static_cast<char>((high << 4) | low);
-        i += 2;  // Skip processed hex digits
-      } 
-      else if (c == '+') {
-        // '+' in URLs is a space
-        output += ' ';
-      } 
+        i += 2; // Skip processed hex digits
+      }
+      else if (c == PLUS) {
+        output += SPACE; // '+' in URLs represents space
+      }
       else {
-        // All other chars copy directly
-        output += c;
+        output += c; // Copy all other characters as-is
       }
     }
+
     return output;
   }
 
 private:
-  // Check if character is a valid hex digit
+  // URL special chars
+  static constexpr char PERCENT = '%';
+  static constexpr char PLUS = '+';
+  static constexpr char SPACE = ' ';
+
+  // Check if character is valid hex digit
   static bool is_hex(char ch) {
-    return (ch >= '0' && ch <= '9') || 
-           (ch >= 'a' && ch <= 'f') || 
-           (ch >= 'A' && ch <= 'F');
+    return (ch >= ZERO && ch <= NINE) || (ch >= LOWER_A && ch <= LOWER_F) || (ch >= UPPER_A && ch <= UPPER_F);
   }
 
-  // Convert a single hex digit character to its integer value
+  // Convert hex digit to integer value
   static int hex_value(char ch) {
-    if (ch >= '0' && ch <= '9')
-      return ch - '0';
-    if (ch >= 'a' && ch <= 'f')
-      return ch - 'a' + 10;
-    return ch - 'A' + 10;
+    if (ch >= ZERO && ch <= NINE) return ch - ZERO;
+    if (ch >= LOWER_A && ch <= LOWER_F) return ch - LOWER_A + 10;
+    return ch - UPPER_A + 10;
   }
-};
 
+  // Hex digits
+  static constexpr char ZERO = '0';
+  static constexpr char NINE = '9';
+  static constexpr char LOWER_A = 'a';
+  static constexpr char LOWER_F = 'f';
+  static constexpr char UPPER_A = 'A';
+  static constexpr char UPPER_F = 'F';
+};
 
 /*
 void build_http_response(const char *file_name,
