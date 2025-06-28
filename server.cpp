@@ -173,24 +173,36 @@ private:
 
 class ClientHandler {
 public:
+    // Constructor: takes a client socket file descriptor and initializes RAII guard
     explicit ClientHandler(int client_fd) noexcept : client_fd_(client_fd), guard_(client_fd) {}
 
+    // Main handler function to process the client request step-by-step
     void handle() noexcept {
-        if (!receive_request()) return;
-        if (!parse_request()) return;
-        if (!decode_url()) return;
+        if (!receive_request()) return;    // Receive raw HTTP request from client
+        if (!parse_request()) return;      // Parse HTTP GET request and extract URL
+        if (!decode_url()) return;         // Decode URL (percent-encoding)
 
+        // Construct full file path by appending decoded URL to root directory
         const std::filesystem::path file_path = std::filesystem::path(ROOT_DIR) / decoded_path_;
+
+        // Build HTTP response (status line, headers, body) from the requested file
         const std::string response = HttpResponseBuilder::build_http_response(file_path);
+
+        // Send the complete HTTP response back to the client socket
         ::send(client_fd_, response.data(), response.size(), 0);
     }
 
 private:
-    int client_fd_;
+    int client_fd_;  // Client socket file descriptor
+
+    // Constants for server root directory and standard HTTP 400 response message
     static constexpr std::string_view ROOT_DIR = "www";
     static constexpr std::string_view BAD_REQUEST_RESPONSE = "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n";
+
+    // Regex pattern to parse simple HTTP GET request and capture requested path
     static constexpr std::string_view GET_REQUEST_REGEX = R"(^GET /([^ ]*) HTTP/1)";
 
+    // RAII guard to automatically close the socket on object destruction
     struct FdGuard {
         int fd;
         explicit FdGuard(int fd_in) : fd(fd_in) {}
@@ -199,48 +211,55 @@ private:
         FdGuard& operator=(const FdGuard&) = delete;
     } guard_;
 
-    std::array<char, BUFFER_SIZE> buffer_{};
-    ssize_t bytes_received_ = 0;
-    std::string_view request_;
-    std::string url_to_decode_;
-    std::string decoded_path_;
-    bool decode_success_ = false;
+    std::array<char, BUFFER_SIZE> buffer_{}; // Buffer to store raw bytes from client
+    ssize_t bytes_received_ = 0;              // Number of bytes read from socket
+    std::string_view request_;                // View into buffer holding the HTTP request
+    std::string url_to_decode_;               // Raw URL extracted from the HTTP request
+    std::string decoded_path_;                // Decoded URL path (percent-decoded)
+    bool decode_success_ = false;             // Flag indicating successful URL decoding
 
+    // Receive raw HTTP request data from client socket
     bool receive_request() noexcept {
         bytes_received_ = ::recv(client_fd_, buffer_.data(), buffer_.size(), 0);
         if (bytes_received_ <= 0) {
-            return false;
+            return false; // Connection closed or error
         }
         request_ = std::string_view(buffer_.data(), static_cast<std::size_t>(bytes_received_));
         return true;
     }
 
+    // Parse the HTTP GET request and extract the requested URL path
     bool parse_request() noexcept {
         static const std::regex get_re(GET_REQUEST_REGEX.data(), std::regex::extended);
         std::cmatch match;
 
+        // Use regex to find "GET /path HTTP/1" pattern
         if (!std::regex_search(request_.data(), request_.data() + request_.size(), match, get_re) || match.size() != 2) {
-            send_response(BAD_REQUEST_RESPONSE);
+            send_response(BAD_REQUEST_RESPONSE); // Malformed request -> send 400 Bad Request
             return false;
         }
-        url_to_decode_ = match[1].str();
+        url_to_decode_ = match[1].str(); // Extract the raw URL path
         return true;
     }
 
+    // Decode percent-encoded URL (e.g., %20 -> space)
     bool decode_url() noexcept {
         UrlDecoder decoder;
         decoded_path_ = decoder.decode(url_to_decode_, decode_success_);
         if (!decode_success_) {
-            send_response(BAD_REQUEST_RESPONSE);
+            send_response(BAD_REQUEST_RESPONSE); // Invalid encoding -> send 400 Bad Request
             return false;
         }
         return true;
     }
 
+    // Helper function to send raw response bytes to client socket
     void send_response(std::string_view response) noexcept {
+        // Use ::send to explicitly call global send() function from sockets API
         ::send(client_fd_, response.data(), response.size(), 0);
     }
 };
+
 
 /*
 int main(int argc, char *argv[]) {
