@@ -189,6 +189,7 @@ public:
         const std::string response = HttpResponseBuilder::build_http_response(file_path);
 
         // Send the complete HTTP response back to the client socket
+        // Use ::send to explicitly call global send() function from sockets API
         ::send(client_fd_, response.data(), response.size(), 0);
     }
 
