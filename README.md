@@ -33,11 +33,6 @@ I chose to refactor a C tutorial I had stumbled upon earlier intended to be appl
     - [x] Use `<filesystem>` instead of `dirent.h` and `unistd.h` for file and folder operations
     - [x] Use `<regex>` instead of POSIX `regex.h`
     - [x] Use `<chrono>` for time instead of `time.h`
-    - [ ] Implement self made error checks instead of `errno.h`
-    - [ ] Implement self made debugging checks instead of `assert.h`
-2. [ ] Extend the file descriptor "server_fd". _fd = "file descriptor".
-    - After acceptance, each client should have their own "client_fd".
-    - Eventually a "log_fd" variable to be implemented as well.
-    - A class for this could possibly be of use.
-3. [ ] Rename variables, functions, structs for clearer description of functionalities.
-4. 
+    - [x] Implement self made error checks instead of `errno.h`
+2. [x] Rename variables, functions, structs for clearer description of functionalities.
+3. [ ] Nest all functions into classes. Better descriptive variables instead of inline values.

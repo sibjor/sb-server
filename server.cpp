@@ -1,21 +1,18 @@
-#include <arpa/inet.h>
-#include <chrono>
+#include <array>
+#include <cctype>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
-#include <iterator>
-#include <netinet/in.h>
 #include <regex>
+#include <sstream>
 #include <string.h>
 #include <string>
+#include <string_view>
+#include <algorithm>
 #include <sys/socket.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <thread>
-#include <sstream>
-#include <fstream>
+#include <unistd.h>
 
-#define PORT 80
-#define BUFFER_SIZE 104857600
+constexpr std::size_t BUFFER_SIZE = 4096;
 
 class FileHelper {
 public:
@@ -174,48 +171,77 @@ private:
     static constexpr const char* MSG_NOT_FOUND = "404 Not Found";
 };
 
-/*
-void *handle_client(void *arg) {
-    int client_fd = *((int *)arg);
-    char *buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+class ClientHandler {
+public:
+    explicit ClientHandler(int client_fd) noexcept : client_fd_(client_fd), guard_(client_fd) {}
 
-    // receive request data from client and store into buffer
-    ssize_t bytes_received = recv(client_fd, buffer, BUFFER_SIZE, 0);
-    if (bytes_received > 0) {
-        // check if request is GET
-        regex_t regex;
-        regcomp(&regex, "^GET /([^ ]*) HTTP/1", REG_EXTENDED);
-        regmatch_t matches[2];
+    void handle() noexcept {
+        if (!receive_request()) return;
+        if (!parse_request()) return;
+        if (!decode_url()) return;
 
-        if (regexec(&regex, buffer, 2, matches, 0) == 0) {
-            // extract filename from request and decode URL
-            buffer[matches[1].rm_eo] = '\0';
-            const char *url_encoded_file_name = buffer + matches[1].rm_so;
-            char *file_name = url_decode(url_encoded_file_name);
-
-            // get file extension
-            char file_ext[32];
-            strcpy(file_ext, get_file_extension(file_name));
-
-            // build HTTP response
-            char *response = (char *)malloc(BUFFER_SIZE * 2 * sizeof(char));
-            size_t response_len;
-            build_http_response(file_name, file_ext, response, &response_len);
-
-            // send HTTP response to client
-            send(client_fd, response, response_len, 0);
-
-            free(response);
-            free(file_name);
-        }
-        regfree(&regex);
+        const std::filesystem::path file_path = std::filesystem::path(ROOT_DIR) / decoded_path_;
+        const std::string response = HttpResponseBuilder::build_http_response(file_path);
+        ::send(client_fd_, response.data(), response.size(), 0);
     }
-    close(client_fd);
-    free(arg);
-    free(buffer);
-    return NULL;
-}
-*/
+
+private:
+    int client_fd_;
+    static constexpr std::string_view ROOT_DIR = "www";
+    static constexpr std::string_view BAD_REQUEST_RESPONSE = "HTTP/1.1 400 Bad Request\r\nContent-Length:0\r\n\r\n";
+    static constexpr std::string_view GET_REQUEST_REGEX = R"(^GET /([^ ]*) HTTP/1)";
+
+    struct FdGuard {
+        int fd;
+        explicit FdGuard(int fd_in) : fd(fd_in) {}
+        ~FdGuard() { if (fd != -1) ::close(fd); }
+        FdGuard(const FdGuard&) = delete;
+        FdGuard& operator=(const FdGuard&) = delete;
+    } guard_;
+
+    std::array<char, BUFFER_SIZE> buffer_{};
+    ssize_t bytes_received_ = 0;
+    std::string_view request_;
+    std::string url_to_decode_;
+    std::string decoded_path_;
+    bool decode_success_ = false;
+
+    bool receive_request() noexcept {
+        bytes_received_ = ::recv(client_fd_, buffer_.data(), buffer_.size(), 0);
+        if (bytes_received_ <= 0) {
+            return false;
+        }
+        request_ = std::string_view(buffer_.data(), static_cast<std::size_t>(bytes_received_));
+        return true;
+    }
+
+    bool parse_request() noexcept {
+        static const std::regex get_re(GET_REQUEST_REGEX.data(), std::regex::extended);
+        std::cmatch match;
+
+        if (!std::regex_search(request_.data(), request_.data() + request_.size(), match, get_re) || match.size() != 2) {
+            send_response(BAD_REQUEST_RESPONSE);
+            return false;
+        }
+        url_to_decode_ = match[1].str();
+        return true;
+    }
+
+    bool decode_url() noexcept {
+        UrlDecoder decoder;
+        decoded_path_ = decoder.decode(url_to_decode_, decode_success_);
+        if (!decode_success_) {
+            send_response(BAD_REQUEST_RESPONSE);
+            return false;
+        }
+        return true;
+    }
+
+    void send_response(std::string_view response) noexcept {
+        ::send(client_fd_, response.data(), response.size(), 0);
+    }
+};
+
 /*
 int main(int argc, char *argv[]) {
     int server_fd;
@@ -233,8 +259,8 @@ int main(int argc, char *argv[]) {
     server_addr.sin_port = htons(PORT);
 
     // bind socket to port
-    if (bind(server_fd,
-            (struct sockaddr *)&server_addr,
+    if (bind(server_fd, 
+            (struct sockaddr *)&server_addr, 
             sizeof(server_addr)) < 0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
@@ -254,8 +280,8 @@ int main(int argc, char *argv[]) {
         int *client_fd = malloc(sizeof(int));
 
         // accept client connection
-        if ((*client_fd = accept(server_fd,
-                                (struct sockaddr *)&client_addr,
+        if ((*client_fd = accept(server_fd, 
+                                (struct sockaddr *)&client_addr, 
                                 &client_addr_len)) < 0) {
             perror("accept failed");
             continue;
@@ -269,5 +295,4 @@ int main(int argc, char *argv[]) {
 
     close(server_fd);
     return 0;
-}
-*/
+}*/
