@@ -194,6 +194,12 @@ public:
 
 private:
     int client_fd_;  // Client socket file descriptor
+    std::array<char, BUFFER_SIZE> buffer_{}; // Buffer to store raw bytes from client
+    ssize_t bytes_received_ = 0;              // Number of bytes read from socket
+    std::string_view request_;                // View into buffer holding the HTTP request
+    std::string url_to_decode_;               // Raw URL extracted from the HTTP request
+    std::string decoded_path_;                // Decoded URL path (percent-decoded)
+    bool decode_success_ = false;             // Flag indicating successful URL decoding
 
     // Constants for server root directory and standard HTTP 400 response message
     static constexpr std::string_view ROOT_DIR = "www";
@@ -210,13 +216,6 @@ private:
         FdGuard(const FdGuard&) = delete;
         FdGuard& operator=(const FdGuard&) = delete;
     } guard_;
-
-    std::array<char, BUFFER_SIZE> buffer_{}; // Buffer to store raw bytes from client
-    ssize_t bytes_received_ = 0;              // Number of bytes read from socket
-    std::string_view request_;                // View into buffer holding the HTTP request
-    std::string url_to_decode_;               // Raw URL extracted from the HTTP request
-    std::string decoded_path_;                // Decoded URL path (percent-decoded)
-    bool decode_success_ = false;             // Flag indicating successful URL decoding
 
     // Receive raw HTTP request data from client socket
     bool receive_request() noexcept {
