@@ -35,4 +35,6 @@ I chose to refactor a C tutorial I had stumbled upon earlier intended to be appl
     - [x] Use `<chrono>` for time instead of `time.h`
     - [x] Implement self made error checks instead of `errno.h`
 2. [x] Rename variables, functions, structs for clearer description of functionalities.
-3. [ ] Nest all functions into classes. Better descriptive variables instead of inline values.
+3. [x] Nest (almost) all functions into classes. Better descriptive variables instead of inline values.
+4. [x] Create instances of objects in the main() function.
+5. [x] Remove unnecessary CMakeLists.txt since my new IDE is doing fine without.
