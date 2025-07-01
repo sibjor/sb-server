@@ -1,12 +1,5 @@
 # SB-SERVER
 
-- Note: CMake is used to generate a compile_commands.json for VSCode ClangD usage. 
-
-```bash
-# After building with CMake:
-ln -s build/compile_commands.json compile_commands.json
-```
-
 - Assignee and author: Sixten Björling
 - Teacher: Sebastian Jensen
 - School: Forsbergs Skola, Kingdom of Sweden
@@ -25,7 +18,7 @@ I chose to refactor a C tutorial I had stumbled upon earlier intended to be appl
 
 ## TODO:
 
-1. [ ] Refactor or clean/remove some of the (many) libraries in use.
+1. [ ] Refactor or clean/remove some of the (many) libraries in use. Did never finish this one :O
     - [x] Use `bool` instead of `stdbool.h`
     - [x] Use `<iostream>` for input/output, avoid `stdio.h`
     - [x] Use `std::string` from `<string>` instead of `string.h` functions
@@ -33,7 +26,7 @@ I chose to refactor a C tutorial I had stumbled upon earlier intended to be appl
     - [x] Use `<filesystem>` instead of `dirent.h` and `unistd.h` for file and folder operations
     - [x] Use `<regex>` instead of POSIX `regex.h`
     - [x] Use `<chrono>` for time instead of `time.h`
-    - [x] Implement self made error checks instead of `errno.h`
+    - [x] Implement eventual self made error checks instead of `errno.h`
 2. [x] Rename variables, functions, structs for clearer description of functionalities.
 3. [x] Nest (almost) all functions into classes. Better descriptive variables instead of inline values.
 4. [x] Create instances of objects in the main() function.
